@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooting Game</title>
+    <link rel="icon" href="#">
+    <style>
+        #myCanvas{
+            border:3px solid red;
+            position:absolute;
+            top:97px;
+            left:737px;
+
+        }
+        #back_img{
+            position:absolute;
+            width:400px;
+            height:750px;
+            top:100px;
+            left:740px;
+        }
+        html, body{
+            width:100%;
+            height:100%;
+        }
+        #back{
+            box-sizing:border-box;
+            width:100%;
+            height:100%;
+            background-color:black;
+        }
+    </style>
+</head>
+<body>
+    <div id="back">
+        <img src = 'img/starfield.png' id="back_img" alt="starfield">
+        <canvas id="myCanvas", width="400", height="750"></canvas>
+    </div>
+    <script>
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        var player_img = 'img/spaceship.png';
+        var invader_image = 'img/ufo.png';
+        var bullet_image = 'img/bullet2.png'
+        var rightPressed = false;
+        var leftPressed = false;
+        var invaderOffsetLeft = 30;
+        var invaderOffsetTop = 30;
+        var invaderWidth = 50;
+        var invaderHeight = 50;
+        var invaderRowCount = 5;
+        var invaderColumnCount = 10;
+        var invaderPadding =20;
+        var playerHeight = 60;
+        var playerWidth = 60;
+        var playerX = 180;
+        var playerY = 670;
+        var dx =2;
+        var dy =-2;
+        var x = canvas.width/2;
+        var y = canvas.height-30;
+        var ballX = playerX + 20;
+        var ballY = playerY;
+        var b_x = playerX+20;
+        var b_y = ballY;
+        var gameOver = false;
+        var gameover_image = 'img/gameover2.png';
+        var start_image = 'img/gamestart.png';
+        var gameStart =1;
+        var score =0;
+        var star_image = 'img/star.png';
+        var star_score =0;
+        var starWidth =40;
+        var starHeight =40;
+        var bang_image = 'img/bang3.png';
+        var h = canvas.height;
+        var b_audio = new Audio('audio/sound_background.mp3');
+        b_audio.loop = true;
+        var bullet_audio = new Audio('audio/sound_shoot.mp3');
+        var d_audio = new Audio('audio/destroyed.mp3');
+        var s_audio = new Audio('audio/star2.mp3');
+        var end_audio = new Audio('audio/gameend3.mp3');
+        end_audio.loop = false;
+        var s = true;
+
+        document.addEventListener("keydown", keyDownHandler, false);
+        document.addEventListener("keyup", keyUpHandler, false);
+
+        function keyDownHandler(e) {
+            console.log('pushed key ' + e.key);
+            if (e.key == "Right" || e.key == "ArrowRight") {
+                console.log('pushed key ' + e.key);
+                rightPressed = true;
+            } 
+            else if (e.key == "Left" || e.key == "ArrowLeft") {
+                console.log('pushed key ' + e.key);
+                leftPressed = true;
+            }
+            else if(e.keyCode == 32){
+                bullet_audio.play();
+            }
+        }
+
+        function keyUpHandler(e) {
+            if (e.key == "Right" || e.key == "ArrowRight") {
+                console.log('not pushed key ' + e.key)
+                rightPressed = false;
+            } 
+            else if (e.key == "Left" || e.key == "ArrowLeft") {
+                console.log('not pushed key ' + e.key);
+                leftPressed = false;
+            }
+            else if(e.keyCode == 32){
+                bullet_audio.play();
+                console.log("버튼누름");
+                createBullet();
+            }
+        }
+        var bulletList = [];
+        function Bullet(){
+            this.x = 0;
+            this.y = 0;
+            this.init = function(){
+                this.x = playerX+30;
+                this.y = playerY;
+                this.alive =true; // true 살아있음. false 죽음
+                bulletList.push(this);
+            };
+            this.update = function(){
+                this.y -=7;
+            }
+            this.checkBoom = function(){
+                var bang_img = new Image();
+                bang_img.src = bang_image;
+                for(var i=0;i<enemyList.length;i++){
+                    if(this.y <= enemyList[i].y &&
+                        this.x>= enemyList[i].x && this.x<=enemyList[i].x+40){
+                        score++;
+                        this.alive = false;
+                        d_audio.play();
+                        ctx.drawImage(bang_img, enemyList[i].x, enemyList[i].y, invaderWidth,invaderHeight);
+                        enemyList.splice(i,1);
+                    }
+                }
+            }
+        }
+
+        var starList = [];
+        function Star(){
+            this.x = 0;
+            this.y = 0;
+
+            this.init = function(){
+                this.y =0;
+                this.x= random_value(0, canvas.width-starWidth);
+                this.alive =true;
+                // true 살아있음. false 죽음
+                starList.push(this);
+            };
+            this.update = function(){
+                this.y +=3;
+            }
+            this.checkStar = function(){
+                for(var i=0;i<starList.length;i++){
+                    if(this.x == starList[i].x && this.y == starList[i].y &&
+                        (this.y >= playerY && h >= this.y) && (playerX <= this.x && this.x <= playerX + playerWidth)){
+                        console.log("별**********");
+                        star_score++;
+                        this.alive = false;
+                        starList.splice(i,1); 
+                        s_audio.play();
+                    }
+                }
+            }
+        }
+        function random_value(min, max){
+            var rnumber = Math.floor(Math.random() * (max-min+1))+min;
+            return rnumber;
+        }
+
+        var enemyList=[];
+        function Enemy(){
+            this.x =0;
+            this.y=0;
+            this.init = function(){
+                this.y =0;
+                this.x= random_value(0, canvas.width-40);
+                enemyList.push(this);
+                this.update = function(){
+                    this.y +=3;
+
+                    if(this.y >= canvas.height - 40){
+                        gameOver = true;
+                        console.log("gameover");
+                    }
+                }
+            }
+        }
+
+        function update(){
+            for(var i =0; i<bulletList.length;i++){
+                if(bulletList[i].alive){
+                    bulletList[i].update();
+                    bulletList[i].checkBoom();
+                }       
+            }
+            for(var i =0; i<enemyList.length;i++){
+                enemyList[i].update();
+            }
+            for(var i =0; i<starList.length;i++){
+                if(starList[i].alive){
+                    starList[i].update();
+                    starList[i].checkStar();
+                }
+            }
+        }
+        function createEnemy(){
+            const itv = setInterval(function(){
+                var e = new Enemy();
+                e.init();
+            },1000);
+        }
+        function createStar(){
+            const itv2 = setInterval(function(){
+                var s = new Star();
+                s.init();
+            },2000);
+        }
+
+        function createBullet(){
+            var b = new Bullet();
+            b.init();
+            console.log(bulletList);
+        }
+
+        var invaders = [];
+        for(var c=0; c<invaderColumnCount; c++) {
+            invaders[c] = [];
+            for(var r=0; r<invaderRowCount; r++) {
+                invaders[c][r]    = { x: 0, y: 0 , status : 1};
+            }
+        }
+ 
+        function drawinvader(invader_image) {
+            var i_img = new Image();
+            i_img.src = invader_image;
+            for(var c=0; c<invaderColumnCount; c++) {
+                for(var r=0; r<invaderRowCount; r++) {
+                    if(invaders[c][r].status == 1){
+                        var invaderX = (c*(invaderWidth+invaderPadding))+invaderOffsetLeft;
+                        var invaderY = (r*(invaderHeight+invaderPadding))+invaderOffsetTop;
+                        invaders[c][r].x = invaderX;    
+                        invaders[c][r].y = invaderY;
+                        ctx.drawImage(i_img, 170+invaderX, invaderY, invaderWidth, invaderHeight); 
+                    }
+                }
+               }
+        }   
+        function addToCanvas(ctx, image){
+            var p_img = new Image();
+            p_img.src = image;
+            ctx.drawImage(p_img, playerX,playerY,playerWidth,playerHeight);
+        }
+        function collisionDetection() {
+            for(var c=0; c<invaderColumnCount; c++) {
+                for(var r=0; r<invaderRowCount; r++) {
+                    var b = invaders[c][r];
+                    if(b.status == 1) {
+                        if(x > b.x && x < b.x+invaderWidth && y > b.y && y < b.y+invaderHeight) {
+                            dy = -dy;
+                            b.status = 0;
+                        }   
+                    }
+                }
+            }
+        }
+        String.format = function() {
+	        let args = arguments;
+	        return args[0].replace(/{(\d+)}/g, function(match, num) {
+		        num = Number(num) + 1;
+		        return typeof(args[num]) != undefined ? args[num] : match;
+            });
+        }
+        function drawBullet(bullet_image){
+            var b_img = new Image();
+            b_img.src = bullet_image;
+            for(var i=0;i<bulletList.length;i++){
+                if(bulletList[i].alive){
+                    ctx.drawImage(b_img, bulletList[i].x, bulletList[i].y,20,20);
+                }
+            }
+             
+        }
+        function drawStar(star_image){
+            var st_img = new Image();
+            st_img.src = star_image;
+            for(var i=0;i<starList.length;i++){
+                ctx.drawImage(st_img, starList[i].x, starList[i].y, starWidth, starHeight);
+            }
+
+        }
+        function drawscore(){
+            ctx.fillText(String.format("{0} : {1}", "Score", score), 20, 30);
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+        }
+        function drawStarScore(){
+            ctx.fillText(String.format("{0} : {1}", "Star", star_score), 20, 60);
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+        }
+        function drawInvader2(invader_image){
+            var i_img2 = new Image();
+            i_img2.src = invader_image;
+            for(var i=0;i<enemyList.length;i++){
+                console.log("출력");
+                ctx.drawImage(i_img2, enemyList[i].x, enemyList[i].y, invaderWidth, invaderHeight);
+            }
+        }
+        function drawstart(){
+            if(gameStart==1){
+                var s_img = new Image();
+                s_img.src = start_image;
+                ctx.clearRect(0,0,400,750);
+                ctx.drawImage(s_img, 40, 180, 330,330);
+                console.log("이미지 업로드")
+                gameStart = 2;
+                console.log(gameStart);
+            }
+        }
+        function draw(){
+            if(!gameOver){
+                ctx.clearRect(0,0,400,750);
+                addToCanvas(ctx, player_img);
+                collisionDetection();
+                update(); 
+                drawBullet(bullet_image);
+                drawInvader2(invader_image);
+                drawscore();
+                drawStar(star_image);
+                drawStarScore();
+       
+                if(rightPressed) {
+                    playerX += 3;
+                    console.log(playerX);
+                    if (playerX + playerWidth > canvas.width){
+                        playerX = canvas.width - playerWidth;
+                    }
+                }
+                else if(leftPressed) {
+                    playerX -= 3;
+                    console.log(playerX);
+                    if (playerX < 0){
+                        playerX = 0;
+                    }
+                }
+    
+                x += dx;
+                y += dy;
+            }
+            else{
+                b_audio.pause();
+                if(s){
+                    end_audio.play();
+                }
+                var intv3 = setInterval(function(){
+                    s = false
+                },1000)
+                if(!s){
+                    end_audio.pause();
+                }
+                var g_img = new Image();
+                g_img.src = gameover_image;
+                ctx.clearRect(0,0,400,750);
+                ctx.drawImage(g_img,  10, 180, 380,380);
+            }
+
+        }
+        function playBackgroundMusic(){
+            
+            b_audio.play();
+
+        }
+
+        function main(){
+            draw();
+            requestAnimationFrame(main);
+        }
+        playBackgroundMusic();
+        createStar();
+        createEnemy();
+        main();
+        
+                
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooting Game</title>
+    <style>
+        #back_img{
+            position:absolute;
+            width:400px;
+            height:750px;
+            top:100px;
+            left:740px;
+            border:3px solid red;
+        }
+        html, body{
+            width:100%;
+            height:100%;
+        }
+        #back{
+            box-sizing:border-box;
+            width:100%;
+            height:100%;
+            background-color:black;
+        }
+        #start{
+            position:absolute;
+            width:300px;
+            height:200px;
+            top:290px;
+            left:800px;
+        }
+        #button{
+            background-color: black;
+            border:1px solid black;
+            position:absolute;
+            width:200px;
+            height:100px;
+            top:650px;
+            left:850px;
+        }
+        #start_button{
+            border:1px solid black;
+            width:200px;
+            height:100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="back">
+        <img src = 'img/starfield.png' id="back_img" alt="starfield">
+        <img src = 'img/gamelogo.png' id="start" alt="startgameicon">
+        <button type="button" id="button" >
+            <img src="img/startbutton.png" id="start_button" onclick=button_click()>
+        </button>
+    </div>
+    <script>
+        function button_click(){
+            console.log("버튼누름");
+            document.getElementById("start_button").src = "img/clickbutton.png";
+            window.open('shoot_game.html');
+        }
+    </script>
+</body>
+</html>
